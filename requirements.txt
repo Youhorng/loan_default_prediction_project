@@ -1,5 +1,8 @@
 pandas
 numpy
+seaborn 
+matplotlib
+missingno
 scikit-learn
 streamlit
 xgboost
