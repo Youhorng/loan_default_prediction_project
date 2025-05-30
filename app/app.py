@@ -2,130 +2,179 @@ import streamlit as st  # type: ignore
 import pandas as pd
 import joblib  # type: ignore
 
-# Store the model in cache to avoid reloading it every time
-@st.cache_data
+
+# Load model with caching to improve performance
+@st.cache_resource
 def load_model(path):
     return joblib.load(path)
 
-model = load_model("../models/xgb_model_loan_defaulting_prediction.pkl")
-model_columns = load_model("../models/xgb_model_features.pkl")
 
-# Load median and mode values
-median_df = pd.read_csv("../data/processed/median_values.csv")
-mode_df = pd.read_csv("../data/processed/mode_values.csv")
-
-# Set page configuration
-st.title("🤖 Loan Default Prediction")
-st.sidebar.header("Enter Customer Information")
-
-# Helper function for flagged numerical inputs 
+# Function to handle numerical inputs with a fallback to median values
 def get_flagged_numerical_input(label, feature_name, median_df):
-    user_input = st.sidebar.text_input(f"{label} (leave empty for blank)")
-
-    if user_input.strip() == "":
+    user_input = st.text_input(f"{label}", key=feature_name)
+    if user_input.strip() == "":  # If input is empty, use the median value
         value = median_df.loc[median_df["feature"] == feature_name, "median"].values[0]
-        flag = 1
+        flag = 1  # Flag indicates that the default value was used
     else:
         try:
-            value = float(user_input)
-            flag = 0
-        except ValueError:
-            st.error(f"Please enter valid number for {label}")
-
+            value = float(user_input)  # Convert input to float
+            flag = 0  # No flag since the user provided a valid input
+        except ValueError:  # Handle invalid input
+            st.warning(f"⚠️ Invalid number for {label}.")
+            value = median_df.loc[median_df["feature"] == feature_name, "median"].values[0]
+            flag = 1
     return value, flag
 
 
-# Helper function for flagged categorical inputs
+# Function to handle categorical inputs with a fallback to mode values
 def get_flagged_categorical_input(label, feature_name, mode_df, options):
-    user_input = st.sidebar.selectbox(f"{label} (select or leave blank)", [""] + options)
-
-    if user_input.strip() == "":
+    user_input = st.selectbox(f"{label}", [""] + options, key=feature_name)
+    if user_input.strip() == "":  # If input is empty, use the mode value
         value = mode_df[feature_name].values[0]
-        flag = 1
+        flag = 1  # Flag indicates that the default value was used
     else:
         value = user_input
-        flag = 0
-    
+        flag = 0  # No flag since the user provided a valid input
     return value, flag
 
 
-# Helper function for required inputs
-def get_required_numeric_input(label):
-    user_input = st.sidebar.text_input(f"{label} (required)")
-
-    if user_input.strip() == "":
+# Function to handle required numeric inputs
+def get_required_numeric_input(label, feature_name):
+    user_input = st.text_input(f"{label}*", key=feature_name)
+    if user_input.strip() == "":  # If input is empty, show an error
+        st.error(f"{label} is required.")
         return None
-        
     try:
-        return float(user_input)
-    except ValueError:
-        st.error(f"Please enter a valid number for {label}.")
+        return float(user_input)  # Convert input to float
+    except ValueError:  # Handle invalid input
+        st.error(f"{label} must be a valid number.")
+        return None
 
 
-# Define feature lists
-required_numeric = [
-    ("Loan Amount", "loan_amount")
-]
+# Function to validate input features against the model's expected features
+def validate_features(input_df, model_features):
+    # Check for missing features
+    missing = [col for col in model_features if col not in input_df.columns]
+    # Check for extra features
+    extras = [col for col in input_df.columns if col not in model_features]
 
-numeric_flag = [
-    ("Mortgage Due", "mortgage_due"),
-    ("Property Value", "property_value"),
-    ("Years Employed", "years_on_job"),
-    ("Number of Derogatory", "num_derogatory"),
-    ("Number of Delinquencies", "num_delinquencies"),
-    ("Credit Age in Month", "credit_age"),
-    ("Number of Inquiries", "num_inquiries"),
-    ("Number of Credit Lines", "num_credit_lines"),
-    ("Debt to Income Ratio", "debt_income_ratio")
-]
+    if missing:
+        st.error(f"🚫 Missing features: {missing}")
+    if extras:
+        st.warning(f"⚠️ Extra features ignored: {extras}")
 
-categorical_flag = [
-    ("Loan Reason", "loan_reason", ["DebtCon", "HomeImp"]),
-    ("Job Type", "job_type", ["Mgr", "Office", "Other", "ProfExe", "Sales", "Self"])
-]
+    # Reorder columns to match the model's expected input and fill missing columns with 0
+    return input_df.reindex(columns=model_features, fill_value=0)
 
-# Define a dictionary to hold user inputs
-input_data = {}
 
-# Collect required numeric inputs
-for label, feature_name in required_numeric:
-    input_data[feature_name] = get_required_numeric_input(label)
-
-# Collect flagged numerical inputs
-for label, feature_name in numeric_flag:
-    value, flag = get_flagged_numerical_input(label, feature_name, median_df)
-    input_data[feature_name] = value
-    input_data[f"{feature_name}_missing_flag"] = flag
-
-# Collect flagged categorical inputs
-for label, feature_name, options in categorical_flag:
-    value, flag = get_flagged_categorical_input(label, feature_name, mode_df, options)
-    input_data[f"{feature_name}_missing_flag"] = flag
-
-    # Add one-hot-encoding 
+# Function to add one-hot encoding for categorical features
+def add_one_hot_encoding(input_data, feature_name, value, options):
     for option in options:
-        if value == option:
-            input_data[f"{feature_name}_{option}"] = 1
+        # Create a binary column for each option
+        input_data[f"{feature_name}_{option}"] = int(value == option)
+
+
+# Main function to run the Streamlit app
+def main():
+    # Set up the Streamlit page
+    st.set_page_config(page_title="Loan Default Predictor", page_icon="🤖", layout="centered")
+    st.title("🤖 Loan Default Risk Prediction")
+
+    # Load the model and related data
+    model = load_model("../models/xgb_model_loan_defaulting_prediction.pkl")
+    model_features = load_model("../models/xgb_model_features.pkl")
+    median_df = pd.read_csv("../data/processed/median_values.csv")
+    mode_df = pd.read_csv("../data/processed/mode_values.csv")
+
+    # Define required numeric features
+    required_numeric = [("Loan Amount", "loan_amount")]
+
+    # Define flagged financial data features
+    flag_financial_data = [
+        ("Mortgage Due", "mortgage_due"),
+        ("Property Value", "property_value"),
+        ("Number of Derogatory", "num_derogatory"),
+        ("Number of Delinquencies", "num_delinquencies"),
+        ("Credit Age in Months", "credit_age"),
+        ("Number of Inquiries", "num_inquiries"),
+        ("Number of Credit Lines", "num_credit_lines"),
+        ("Debt to Income Ratio", "debt_income_ratio"),                
+    ]
+
+    # Define flagged employment data features
+    flag_employment_data = [
+        ("Years Employed", "years_on_job"),   
+        ("Job Type", "job_type", ["Mgr", "Office", "Other", "ProfExe", "Sales", "Self"]),           
+    ]
+
+    # Define flagged loan purpose data features
+    flag_loan_purpose_data = [
+        ("Loan Reason", "loan_reason", ["DebtCon", "HomeImp"])       
+    ]
+
+    # Dictionary to store user inputs
+    data_input = {}
+
+    # Create a form for user input
+    with st.form("prediction_form"):
+        st.subheader("🔢 Loan Application Profile")
+        
+        # Collect inputs (same as before)
+        with st.expander("🏦 Financial History"):
+            for label, name in required_numeric:
+                value = get_required_numeric_input(label, name)
+                if value is not None:
+                    data_input[name] = value
+
+            for label, name in flag_financial_data:
+                value, flag = get_flagged_numerical_input(label, name, median_df)
+                data_input[name] = value
+                data_input[f"{name}_missing_flag"] = flag
+
+        with st.expander("👷 Employment Information"):
+            for item in flag_employment_data:
+                if len(item) == 3:
+                    label, name, options = item
+                    value, flag = get_flagged_categorical_input(label, name, mode_df, options)
+                    data_input[f"{name}_missing_flag"] = flag
+                    add_one_hot_encoding(data_input, name, value, options)
+                else:
+                    label, name = item
+                    value, flag = get_flagged_numerical_input(label, name, median_df)
+                    data_input[name] = value
+                    data_input[f"{name}_missing_flag"] = flag
+
+        with st.expander("💼 Loan Purpose"):
+            for label, name, options in flag_loan_purpose_data:
+                value, flag = get_flagged_categorical_input(label, name, mode_df, options)
+                data_input[f"{name}_missing_flag"] = flag
+                add_one_hot_encoding(data_input, name, value, options)
+
+        # Only one button to submit and trigger prediction
+        submitted = st.form_submit_button("Predict Default Risk")
+
+    st.write(data_input)
+
+    # Handle prediction immediately after form submit
+    if submitted:
+        if any(v is None for v in data_input.values()):
+            st.warning("Please fix the input errors above.")
         else:
-            input_data[f"{feature_name}_{option}"] = 0
+            df = pd.DataFrame([data_input])
+            df = validate_features(df, model_features)
 
-# Convert the input data to a DataFrame
-df = pd.DataFrame([input_data])
-st.write(df)
+            if df.isnull().values.any():
+                st.error("🚫 Input data contains NaN values. Please revise your input.")
+            else:
+                try:
+                    y_pred = model.predict(df)[0]
+                    prediction_label = "🔴 High Risk Defaulting" if y_pred == 1 else "🟢 Low Risk Defaulting"
+                    st.success(f"**Prediction:** {prediction_label}")
+                    st.write(y_pred)
+                except Exception as e:
+                    st.error(f"❌ Error during prediction: {e}")
 
-# Check model features and input features for valdiation
-feature_names = model.get_booster().feature_names
-missing_in_input = [col for col in feature_names if col not in df.columns]
-extra_in_input = [col for col in df.columns if col not in feature_names]
 
-if missing_in_input:
-    st.error(f"Missing features: {missing_in_input}")
-if extra_in_input:
-    st.warning(f"Unexpected extra features: {extra_in_input}")
-
-# Rearrange the input DataFrame to match the model's expected feature order
-df = df.reindex(columns=feature_names, fill_value=0)
-
-# Make prediction
-y_pred = model.predict(df.head(1))
-st.write(y_pred)
+# Run the app
+if __name__ == "__main__":
+    main()
