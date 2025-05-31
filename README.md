@@ -2,7 +2,12 @@
 
 ![Loan Default Predictor](https://img.shields.io/badge/Loan%20Default-Prediction-blue)
 
-A machine learning project to predict the likelihood of loan default using financial, employment, and loan purpose data. This project includes a Streamlit-based web application for user-friendly interaction.
+A machine learning project that predicts the likelihood of loan default using financial, employment, and loan purpose data from the **Home Equity Loan** dataset. 
+
+This project features a **Streamlit**-based web application, providing a user-friendly interface for easy interaction and real-time predictions.
+
+👉 Check out the live demo here: [Home Equity Loan Prediction App](https://home-equity-loan-prediction.streamlit.app/)
+
 
 ---
 
