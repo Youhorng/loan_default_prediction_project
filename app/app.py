@@ -153,7 +153,6 @@ def main():
         # Only one button to submit and trigger prediction
         submitted = st.form_submit_button("Predict Default Risk")
 
-    st.write(data_input)
 
     # Handle prediction immediately after form submit
     if submitted:
@@ -168,9 +167,14 @@ def main():
             else:
                 try:
                     y_pred = model.predict(df)[0]
-                    prediction_label = "🔴 High Risk Defaulting" if y_pred == 1 else "🟢 Low Risk Defaulting"
-                    st.success(f"**Prediction:** {prediction_label}")
-                    st.write(y_pred)
+                    y_pred_probab = model.predict_proba(df)[0]
+                    if y_pred == 1:
+                        prediction_label = "🔴 High Risk Defaulting"
+                        prediction_probab = f"{y_pred_probab[1]:.2%}"
+                    else:
+                        prediction_label = "🟢 Low Risk Defaulting"
+                        prediction_probab = f"{y_pred_probab[0]:.2%}"
+                    st.success(f"**Prediction:** {prediction_label} with Probabilities of {prediction_probab}")
                 except Exception as e:
                     st.error(f"❌ Error during prediction: {e}")
 
