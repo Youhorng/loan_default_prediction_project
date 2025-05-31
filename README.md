@@ -102,3 +102,29 @@ Follow these steps to set up the project locally:
    ```bash
    git clone https://github.com/yourusername/loan_default_prediction_project.git
    cd loan_default_prediction_project
+
+2. **Set Up a Virtual Environment**
+    ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+
+3. **Install Dependencies**
+    ```bash
+    pip3 install -r requirements.txt
+
+4. **Run the Streamlit App**
+    ```bash
+    streamlit run app/app.py
+
+---
+
+## **Usage**
+1. Launch the Streamlit app using the command above.
+2. Enter the required loan application details in the form.
+3. Click the "Predict Default Risk" button to view the prediction:
+    - 🔴 High Risk Defaulting: The applicant is likely to default.
+    - 🟢 Low Risk Defaulting: The applicant is unlikely to default.
+
+
+
+
