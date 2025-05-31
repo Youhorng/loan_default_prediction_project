@@ -81,10 +81,10 @@ def main():
     st.title("🤖 Loan Default Risk Prediction")
 
     # Load the model and related data
-    model = load_model("../models/xgb_model_loan_defaulting_prediction.pkl")
-    model_features = load_model("../models/xgb_model_features.pkl")
-    median_df = pd.read_csv("../data/processed/median_values.csv")
-    mode_df = pd.read_csv("../data/processed/mode_values.csv")
+    model = load_model("models/xgb_model_loan_defaulting_prediction.pkl")
+    model_features = load_model("models/xgb_model_features.pkl")
+    median_df = pd.read_csv("data/processed/median_values.csv")
+    mode_df = pd.read_csv("data/processed/mode_values.csv")
 
     # Define required numeric features
     required_numeric = [("Loan Amount", "loan_amount")]
