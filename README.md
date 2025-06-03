@@ -93,8 +93,6 @@ The **Home Equity Loans (HMEQ)** dataset contains detailed information on 5,960 
 
 - **Streamlit Web App**: A user-friendly interface for entering loan application details and viewing predictions.
 - **Machine Learning Model**: A trained XGBoost model for accurate predictions.
-- **Data Preprocessing**: Includes scripts and processed datasets for feature engineering.
-- **One-Hot Encoding**: Handles categorical variables dynamically.
 - **Fallback Mechanisms**: Uses median/mode values for missing or invalid inputs.
 
 ---
