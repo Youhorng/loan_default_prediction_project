@@ -1,6 +1,9 @@
 # Loan Default Prediction Project
 
 ![Loan Default Predictor](https://img.shields.io/badge/Loan%20Default-Prediction-blue)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.0-red)
+![XGBoost](https://img.shields.io/badge/XGBoost-3.0-orange)
 
 A machine learning project that predicts the likelihood of loan default using financial, employment, and loan purpose data from the **Home Equity Loan** dataset. 
 
@@ -19,9 +22,6 @@ This project features a **Streamlit**-based web application, providing a user-fr
 5. [Features](#features)
 6. [Installation](#installation)
 7. [Usage](#usage)
-8. [Project Structure](#project-structure)
-9. [Contributing](#contributing)
-10. [License](#license)
 
 ---
 
@@ -103,7 +103,7 @@ Follow these steps to set up the project locally:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/loan_default_prediction_project.git
+   git clone https://github.com/Youhorng/loan_default_prediction_project.git
    cd loan_default_prediction_project
 
 2. **Set Up a Virtual Environment**
